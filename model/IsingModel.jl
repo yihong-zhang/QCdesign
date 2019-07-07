@@ -1,34 +1,48 @@
-struct IsingModel{D} <: AbstractModel{D}
+struct Ising{D} <: AbstractModel{D}
     size::NTuple{D, Int}
     periodic::Bool
-    J_coupling::Float64
     h::Float64
-    IsingModel(size::Int...; periodic::Bool) = new{length(size)}(size, periodic)
+    J_coupling::Float64
+    Ising(size::Int...; periodic::Bool, h::Real, J_coupling::Real) = new{length(size)}(size, periodic, Float64(h), Float64(J_coupling))
 end
 
-Base.size(model::IsingModel) = model.size
+Base.size(model::Ising) = model.size
 
 single_spin(nqubit::Int, i::Int) = put(nqubit, i => Z)
 coupling_spins(nqubit::Int, i::Int, j::Int = i + 1) = put(nqubit, i => Z) * put(nqubit, j => Z)
 
-function hamiltonian(model::IsingModel)
-    Sum([x[3] * coupling_spins(nspins(model), x[1], x[2]) for x in get_bonds(model)]...)
+function hamiltonian(model::Ising)
+    Hsingle = Sum([x[2] * single_spin(nspins(model), x[1]) for x in get_Hsingle(model)]...)
+    Hcoupling = Sum([x[3] * coupling_spins(nspins(model), x[1], x[2]) for x in get_Hcoupling(model)]...)
+    Sum(Hsingle..., Hcoupling...)
 end
 
-function get_bonds(model::IsingModel{2})
+function get_Hsingle(model::Ising{2})
     m, n = model.size
     cis = LinearIndices(model.size)
-    bonds = Tuple{Int, Int, Float64}[]
+    H_single = Tuple{Int, Float64}[]
     for i = 1:m, j = 1:n
-        (i != m || model.periodic) && push!(bonds, (cis[i,j], cis[i%m + 1, j], 1.0))
-        (j != n || model.periodic) && push!(bonds, (cis[i,j], cis[i, j%n + 1], 1.0))
+        push!(H_single, (cis[i, j], model.h))
     end
-    bonds
+    H_single
 end
 
-function get_bonds(model::IsingModel{1})
+get_Hsingle(model::Ising{1}) = [(i, model.h) for i in 1:model.size[1]]
+
+function get_Hcoupling(model::Ising{2})
+    m, n = model.size
+    cis = LinearIndices(model.size)
+    H_coupling = Tuple{Int, Int, Float64}[]
+    for i = 1:m, j = 1:n
+        (i != m || model.periodic) && push!(H_coupling, (cis[i, j], cis[i%m + 1, j], model.J_coupling))
+        (j != n || model.periodic) && push!(H_coupling, (cis[i, j], cis[i, j%n + 1], model.J_coupling))
+    end
+    H_coupling
+end
+
+function get_Hcoupling(model::Ising{1})
     nqubit, = model.size
-    [(i, i%nqubit + 1, 1.0) for i in 1:(model.periodic ? nqubit : nqubit-1)]
+    [(i, i%nqubit + 1, model.J_coupling) for i in 1:(model.periodic ? nqubit : nqubit-1)]
 end
 
 """
@@ -37,7 +51,7 @@ end
 Ground state energy by sampling Quantum circuit.
 The hamiltonian is limited to Heisenberg and J1J2 Type.
 """
-function energy(qpeps::QPEPSMachine, model::AbstractHeisenberg)
+function energy(qpeps::QPEPSMachine, model::Ising)
     local eng = 0.0
     for basis in [X, Y, Z]
         mres = gensample(qpeps, basis)
