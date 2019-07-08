@@ -1,4 +1,4 @@
-export FullConnectStruct, TwoLevelStruct
+export FullConnectStruct, TwoLevelStruct, NearestStruct
 export CZ, paraEntangler, get_struct
 
 abstract type AbsCircuitStructure end
@@ -8,6 +8,11 @@ struct FullConnectStruct <: AbsCircuitStructure
 end
 
 struct TwoLevelStruct <: AbsCircuitStructure
+    nqubit::Int
+    nrepeat::Int
+end
+
+struct NearestStruct <: AbsCircuitStructure
     nqubit::Int
     nrepeat::Int
 end
@@ -25,15 +30,29 @@ function get_struct(c::AbsCircuitStructure, mode)
     if typeof(c) == FullConnectStruct
         for i = 1:c.nrepeat
             for j = 1:(c.nqubit - 1)
-                chain(c.nqubit, paraEntangler(mode, c.nqubit, j, m) for m = j+1 : c.nqubit) |> add!
+                for m = j+1 : c.nqubit
+                    put(c.nqubit, j => chain(rot(Z, 0.0), rot(X, 0.0), rot(Z, 0.0))) |> add!
+                    put(c.nqubit, m => chain(rot(Z, 0.0), rot(X, 0.0), rot(Z, 0.0))) |> add!
+                    paraEntangler(mode, c.nqubit, j, m) |> add!
+                end
             end
         end
     elseif typeof(c) == TwoLevelStruct
-        for i = 1:c.nqubit
-            if i%2 == 1
-                chain(c.nqubit, paraEntangler(mode, c.nqubit, l1, l1 + 1) for l1 = 1 : 2 : c.nqubit - 2 * (c.nqubit%2)) |> add!
-            else
-                chain(c.nqubit, paraEntangler(mode, c.nqubit, l2, l2 + 1) for l2 = 2: 2: c.nqubit - 2 * ((c.nqubit+1)%2)) |> add!
+        for j = 1:c.nrepeat
+#            chain(c.nqubit, put(c.nqubit, loc => chain(rot(Z, 0.0), rot(X, 0.0), rot(Z, 0.0))) for loc = 1:c.nqubit) |> add!
+            for i = 1:c.nqubit
+                if i%2 == 1
+                    chain(c.nqubit, chain(put(c.nqubit, l1 => chain(rot(Z, 0.0), rot(X, 0.0), rot(Z, 0.0))), put(c.nqubit, l1 + 1 => chain(rot(Z, 0.0), rot(X, 0.0), rot(Z, 0.0))), paraEntangler(mode, c.nqubit, l1, l1 + 1)) for l1 = 1 : 2 : c.nqubit - 2 * (c.nqubit%2)) |> add!
+                else
+                    chain(c.nqubit, chain(put(c.nqubit, l2 => chain(rot(Z, 0.0), rot(X, 0.0), rot(Z, 0.0))), put(c.nqubit, l2 + 1 => chain(rot(Z, 0.0), rot(X, 0.0), rot(Z, 0.0))), paraEntangler(mode, c.nqubit, l2, l2 + 1)) for l2 = 2: 2: c.nqubit - 2 * ((c.nqubit+1)%2)) |> add!
+                end
+            end
+        end
+    elseif typeof(c) == NearestStruct
+        for i = 1:c.nrepeat
+            chain(c.nqubit, put(c.nqubit, loc => chain(rot(Z, 0.0), rot(X, 0.0), rot(Z, 0.0))) for loc = 1:c.nqubit) |> add!
+            for j = 1:(c.nqubit-1)
+                chain(c.nqubit, paraEntangler(mode, c.nqubit, j, j + 1)) |> add!
             end
         end
     else

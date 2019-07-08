@@ -39,5 +39,5 @@ function train(machine::TrainMachine, model::AbstractModel; maxiter = 200, optim
         println("Iter $i, E = $(history[end])")
         flush(stdout)
     end
-    machine, history
+    reg0, machine, history
 end

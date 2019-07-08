@@ -1,5 +1,5 @@
-export AbstractModel, IsingModel
-export hamiltonian, ground_state, energy_current, get_Hsingle, get_Hcoupling, nspins
+export AbstractModel, Ising, Heisenberg
+export hamiltonian, ground_state, energy_current, get_Hsingle, get_Hcoupling, get_HeisenbergCoupling, nspins
 
 abstract type AbstractModel{D} end
 
@@ -40,4 +40,8 @@ Get the weighted spin-spin coupling terms of a Ising model in the form Tuple(i, 
 """
 function get_Hcoupling end
 
+function get_HeisenbergCoupling end
+
+
 include("IsingModel.jl")
+include("HeisenbergModel.jl")
