@@ -20,6 +20,17 @@ function get_gradients(machine::TrainMachine, reg0::AbstractRegister)
     end
 end
 
+using QuAlgorithmZoo
+function get_gradients_fast(machine::TrainMachine, reg0::AbstractRegister)
+    # bpdiff
+    ψ = copy(reg0) |> machine.circuit
+
+    # get gradient
+    δ = copy(ψ) |> machine.hami
+    backward!((ψ, δ), machine.circuit)
+    gradient(machine.circuit)
+end
+
 function train(machine::TrainMachine, model::AbstractModel; maxiter = 200, optimizer = Optimise.ADAM(0.1))
     @assert nqubits(machine.hami) == nspins(model)
     reg0 = reduce(⊗, rand_state(1) for i = 1:nspins(model))
@@ -31,13 +42,14 @@ function train(machine::TrainMachine, model::AbstractModel; maxiter = 200, optim
     params = parameters(machine.circuit)
     println("Number of parameters is $(length(params))")
     for i in 1:maxiter
-        grad = get_gradients(machine, reg0)
+        #grad = get_gradients(machine, reg0)
+        grad = get_gradients_fast(machine, reg0)
         Optimise.update!(optimizer, params, grad)
         dispatch!(machine.circuit, params)
         reg = copy(reg0)
         push!(history, energy_current(reg |> machine.circuit, machine.hami))
-        println("Iter $i, E = $(history[end])")
-        flush(stdout)
+        #println("Iter $i, E = $(history[end])")
+        #flush(stdout)
     end
     reg0, machine, history
 end
