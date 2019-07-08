@@ -1,6 +1,7 @@
 using Yao, Yao.ConstGate, BitBasis
 using Statistics, Plots
 using KrylovKit: eigsolve
+using QuAlgorithmZoo: autodiff
 
 
 include("paracircuit.jl")
@@ -10,11 +11,11 @@ include("train.jl")
 ising1d = Ising(6; periodic = false, h = 2, J_coupling = 0.8)
 repeat = 1
 ising1dfull = FullConnectStruct(nspins(ising1d), repeat)
-ising1dfullcircuit = get_struct(ising1dfull, CNOT)
+ising1dfullcircuit = get_struct(ising1dfull, CNOT) |> autodiff(:BP)
 ising1dmachine = TrainMachine(hamiltonian(ising1d), ising1dfullcircuit)
 
 ising1dnear = NearestStruct(nspins(ising1d), repeat)
-ising1dnearcircuit = get_struct(ising1dnear, CNOT)
+ising1dnearcircuit = get_struct(ising1dnear, CNOT) |> autodiff(:BP)
 ising1dmachine = TrainMachine(hamiltonian(ising1d), ising1dnearcircuit)
 
 
