@@ -1,2 +1,2 @@
 # Quantum-circuit-structure-design
-Using "fully" parametrized circuits and VQE algorithms
+Using "fully" parametrized circuits and VQE algorithms.

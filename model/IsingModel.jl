@@ -44,20 +44,3 @@ function get_Hcoupling(model::Ising{1})
     nqubit, = model.size
     [(i, i%nqubit + 1, model.J_coupling) for i in 1:(model.periodic ? nqubit : nqubit-1)]
 end
-
-"""
-    energy(config, model::AbstractHeisenberg; nbatch) -> Float64
-
-Ground state energy by sampling Quantum circuit.
-The hamiltonian is limited to Heisenberg and J1J2 Type.
-"""
-function energy(qpeps::QPEPSMachine, model::Ising)
-    local eng = 0.0
-    for basis in [X, Y, Z]
-        mres = gensample(qpeps, basis)
-        for (i,j,w) in get_bonds(model)
-            eng += w*(1-2*mean(mres[i] .⊻ mres[j]))
-        end
-    end
-    eng/=4
-end
