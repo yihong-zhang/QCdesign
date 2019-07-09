@@ -24,7 +24,7 @@ end
 
 function get_HeisenbergCoupling(model::Heisenberg{1})
     nqubit, = model.size
-    [(i, i%nbit+1, 1.0) for i in 1:(model.periodic ? nbit : nbit-1)]
+    [(i, i%nqubit + 1, model.J_coupling) for i in 1:(model.periodic ? nqubit : nqubit-1)]
 end
 
-hamiltonian(model::Heisenberg) = Sum([x[2] * Heisenberg_ij(nspins(model), x[1]) for x in get_HeisenbergCoupling(model)]...)
+hamiltonian(model::Heisenberg) = Sum([x[3] * Heisenberg_ij(nspins(model), x[1], x[2]) for x in get_HeisenbergCoupling(model)]...)

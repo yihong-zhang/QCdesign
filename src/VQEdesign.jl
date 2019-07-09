@@ -1,7 +1,8 @@
 using Yao, Yao.ConstGate, BitBasis
 using Statistics, Plots
 using KrylovKit: eigsolve
-
+using Arpack
+using LinearAlgebra
 
 include("paracircuit.jl")
 include("../model/AbstractModel.jl")
@@ -63,7 +64,7 @@ repeat = 1
 heisenberg2dstruct = TwoLevelStruct(nspins(heisenberg2d), repeat)
 heisenberg2dcircuit = get_struct(heisenberg2dstruct, CNOT)
 heisenberg2dmachine = TrainMachine(hamiltonian(heisenberg2d), heisenberg2dcircuit)
-reg0, machine2d, his2d = train(heisenberg2dmachine, ising2d; maxiter=5000, optimizer = Optimise.ADAM(0.1))
+reg0, machine2d, his2d = train(heisenberg2dmachine, heisenberg2d; maxiter=5000, optimizer = Optimise.ADAM(0.1))
 Plots.plot(his2d)
 Eg, vg = ground_state(heisenberg2d)
 fidelity(copy(reg0) |> machine2d.circuit, vg)

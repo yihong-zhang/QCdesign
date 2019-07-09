@@ -42,6 +42,7 @@ function get_Hcoupling end
 
 function get_HeisenbergCoupling end
 
+function hamiltonian end
 
 include("IsingModel.jl")
 include("HeisenbergModel.jl")
